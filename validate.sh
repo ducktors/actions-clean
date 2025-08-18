@@ -3,7 +3,7 @@ set -o errexit -o nounset -o pipefail
 
 # Build validation script for actions-clean
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "${SCRIPT_DIR}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -35,11 +35,11 @@ check_command() {
     local cmd="$1"
     local description="$2"
     
-    if command -v "$cmd" >/dev/null 2>&1; then
-        log_success "$description is available"
+    if command -v "${cmd}" >/dev/null 2>&1; then
+        log_success "${description} is available"
         return 0
     else
-        log_error "$description is not available (command: $cmd)"
+        log_error "${description} is not available (command: ${cmd})"
         return 1
     fi
 }
@@ -56,10 +56,10 @@ validate_file_structure() {
     )
     
     for file in "${required_files[@]}"; do
-        if [[ -f "$file" ]]; then
-            log_success "Found required file: $file"
+        if [[ -f "${file}" ]]; then
+            log_success "Found required file: ${file}"
         else
-            log_error "Missing required file: $file"
+            log_error "Missing required file: ${file}"
         fi
     done
     
@@ -73,12 +73,12 @@ validate_file_structure() {
         )
         
         for file in "${test_files[@]}"; do
-            if [[ -f "$file" ]] && [[ -x "$file" ]]; then
-                log_success "Found executable test file: $file"
-            elif [[ -f "$file" ]]; then
-                log_warning "Test file exists but is not executable: $file"
+            if [[ -f "${file}" ]] && [[ -x "${file}" ]]; then
+                log_success "Found executable test file: ${file}"
+            elif [[ -f "${file}" ]]; then
+                log_warning "Test file exists but is not executable: ${file}"
             else
-                log_error "Missing test file: $file"
+                log_error "Missing test file: ${file}"
             fi
         done
     else
@@ -105,26 +105,26 @@ validate_shell_scripts() {
     )
     
     for script in "${shell_scripts[@]}"; do
-        if [[ -f "$script" ]]; then
+        if [[ -f "${script}" ]]; then
             # Check shebang
-            if head -n1 "$script" | grep -q "#!/.*bash"; then
-                log_success "$script has correct bash shebang"
+            if head -n1 "${script}" | grep -q "#!/.*bash"; then
+                log_success "${script} has correct bash shebang"
             else
-                log_error "$script missing or incorrect bash shebang"
+                log_error "${script} missing or incorrect bash shebang"
             fi
             
             # Check if executable
-            if [[ -x "$script" ]]; then
-                log_success "$script is executable"
+            if [[ -x "${script}" ]]; then
+                log_success "${script} is executable"
             else
-                log_warning "$script is not executable"
+                log_warning "${script} is not executable"
             fi
             
             # Basic syntax check
-            if bash -n "$script" 2>/dev/null; then
-                log_success "$script has valid bash syntax"
+            if bash -n "${script}" 2>/dev/null; then
+                log_success "${script} has valid bash syntax"
             else
-                log_error "$script has invalid bash syntax"
+                log_error "${script} has invalid bash syntax"
             fi
         fi
     done
@@ -202,10 +202,10 @@ validate_action_yml() {
         # Validate inputs
         local expected_inputs=("cleanup_home" "cleanup_workspace" "dry_run")
         for input in "${expected_inputs[@]}"; do
-            if grep -q "$input:" action.yml; then
-                log_success "action.yml has input: $input"
+            if grep -q "${input}:" action.yml; then
+                log_success "action.yml has input: ${input}"
             else
-                log_error "action.yml missing input: $input"
+                log_error "action.yml missing input: ${input}"
             fi
         done
     else
@@ -226,11 +226,11 @@ run_linting() {
         )
         
         for script in "${shell_scripts[@]}"; do
-            if [[ -f "$script" ]]; then
-                if shellcheck "$script" >/dev/null 2>&1; then
-                    log_success "ShellCheck passed for $script"
+            if [[ -f "${script}" ]]; then
+                if shellcheck "${script}" >/dev/null 2>&1; then
+                    log_success "ShellCheck passed for ${script}"
                 else
-                    log_error "ShellCheck failed for $script"
+                    log_error "ShellCheck failed for ${script}"
                 fi
             fi
         done
@@ -289,17 +289,17 @@ validate_security() {
     )
     
     for script in "${all_scripts[@]}"; do
-        if [[ -f "$script" ]]; then
+        if [[ -f "${script}" ]]; then
             local issues_found=false
             for pattern in "${security_patterns[@]}"; do
-                if grep -qE "$pattern" "$script"; then
-                    log_warning "Potential security issue in $script: pattern '$pattern'"
+                if grep -qE "${pattern}" "${script}"; then
+                    log_warning "Potential security issue in ${script}: pattern '${pattern}'"
                     issues_found=true
                 fi
             done
             
-            if ! $issues_found; then
-                log_success "No obvious security issues in $script"
+            if ! ${issues_found}; then
+                log_success "No obvious security issues in ${script}"
             fi
         fi
     done
@@ -341,7 +341,7 @@ main() {
     
     # Final result
     echo "============================================="
-    if [[ $VALIDATION_FAILED -eq 0 ]]; then
+    if [[ ${VALIDATION_FAILED} -eq 0 ]]; then
         log_success "All validations passed! ✨"
         exit 0
     else

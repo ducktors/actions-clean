@@ -18,46 +18,46 @@ cleanup_directory() {
   local dir="$1"
   local description="$2"
   
-  if [[ ! -d "$dir" ]]; then
-    echo "WARNING: $description directory not found: $dir"
+  if [[ ! -d "${dir}" ]]; then
+    echo "WARNING: ${description} directory not found: ${dir}"
     return 0
   fi
   
   local items
-  items=$(find "$dir" -mindepth 1 -maxdepth 1 2>/dev/null || true)
+  items=$(find "${dir}" -mindepth 1 -maxdepth 1 2>/dev/null || true)
   
-  if [[ -z "$items" ]]; then
-    echo "INFO: $description directory is already clean: $dir"
+  if [[ -z "${items}" ]]; then
+    echo "INFO: ${description} directory is already clean: ${dir}"
     return 0
   fi
   
-  if [[ "$DRY_RUN" == "true" ]]; then
-    echo "DRY RUN: Would clean $description directory: $dir"
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "DRY RUN: Would clean ${description} directory: ${dir}"
     echo "Items that would be removed:"
-    find "$dir" -mindepth 1 -maxdepth 1 -print 2>/dev/null || true
+    find "${dir}" -mindepth 1 -maxdepth 1 -print 2>/dev/null || true
   else
-    echo "Cleaning $description directory: $dir"
-    find "$dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+    echo "Cleaning ${description} directory: ${dir}"
+    find "${dir}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
   fi
 }
 
 # Validate workspace path for security
 if [[ -n "${GITHUB_WORKSPACE:-}" ]] && [[ -d "${GITHUB_WORKSPACE}" ]]; then
   # Only clean if we're actually in a reasonable workspace path
-  if [[ "$PWD" != "${GITHUB_WORKSPACE}"* ]] && [[ "$DRY_RUN" != "true" ]]; then
+  if [[ "${PWD}" != "${GITHUB_WORKSPACE}"* ]] && [[ "${DRY_RUN}" != "true" ]]; then
     echo "WARNING: Not executing from within GITHUB_WORKSPACE, skipping cleanup for security"
     exit 0
   fi
 fi
 
 # Clean home directory contents if enabled
-if [[ "$CLEANUP_HOME" == "true" ]] && [[ -n "${HOME:-}" ]]; then
-  cleanup_directory "$HOME" "HOME"
+if [[ "${CLEANUP_HOME}" == "true" ]] && [[ -n "${HOME:-}" ]]; then
+  cleanup_directory "${HOME}" "HOME"
 fi
 
 # Clean workspace directory contents if enabled
-if [[ "$CLEANUP_WORKSPACE" == "true" ]] && [[ -n "${GITHUB_WORKSPACE:-}" ]]; then
-  cleanup_directory "$GITHUB_WORKSPACE" "GITHUB_WORKSPACE"
+if [[ "${CLEANUP_WORKSPACE}" == "true" ]] && [[ -n "${GITHUB_WORKSPACE:-}" ]]; then
+  cleanup_directory "${GITHUB_WORKSPACE}" "GITHUB_WORKSPACE"
 fi
 
 if test "${RUNNER_DEBUG:-0}" != '1'; then

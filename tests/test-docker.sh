@@ -21,28 +21,28 @@ run_test() {
     local test_function="$2"
     
     ((TOTAL_TESTS++))
-    echo -e "${YELLOW}Running test: $test_name${NC}"
+    echo -e "${YELLOW}Running test: ${test_name}${NC}"
     
-    if $test_function; then
-        echo -e "${GREEN}✓ PASSED: $test_name${NC}"
+    if ${test_function}; then
+        echo -e "${GREEN}✓ PASSED: ${test_name}${NC}"
         ((PASSED_TESTS++))
     else
-        echo -e "${RED}✗ FAILED: $test_name${NC}"
+        echo -e "${RED}✗ FAILED: ${test_name}${NC}"
         TEST_FAILED=1
     fi
     echo
 }
 
 cleanup_docker() {
-    docker rmi "$IMAGE_NAME" 2>/dev/null || true
+    docker rmi "${IMAGE_NAME}" 2>/dev/null || true
 }
 
 # Test cases
 test_docker_build() {
-    cd "$PROJECT_DIR"
+    cd "${PROJECT_DIR}"
     
     # Build the Docker image
-    if docker build -t "$IMAGE_NAME" . >/dev/null 2>&1; then
+    if docker build -t "${IMAGE_NAME}" . >/dev/null 2>&1; then
         return 0
     fi
     
@@ -52,10 +52,10 @@ test_docker_build() {
 test_docker_entrypoint() {
     # Test that entrypoint script is accessible and executable
     local output
-    output=$(docker run --rm "$IMAGE_NAME" echo "test" 2>&1)
+    output=$(docker run --rm "${IMAGE_NAME}" echo "test" 2>&1)
     
-    if [[ "$output" == *"Cleanup setup to run when all jobs are completed"* ]] && 
-       [[ "$output" == *"test"* ]]; then
+    if [[ "${output}" == *"Cleanup setup to run when all jobs are completed"* ]] && 
+       [[ "${output}" == *"test"* ]]; then
         return 0
     fi
     
@@ -65,9 +65,9 @@ test_docker_entrypoint() {
 test_docker_dry_run() {
     # Create a temporary directory to mount
     local temp_dir="${TMPDIR}docker_test_$$"
-    mkdir -p "$temp_dir/workspace" "$temp_dir/home"
-    echo "test file" > "$temp_dir/workspace/test.txt"
-    echo "home file" > "$temp_dir/home/home.txt"
+    mkdir -p "${temp_dir}/workspace" "${temp_dir}/home"
+    echo "test file" > "${temp_dir}/workspace/test.txt"
+    echo "home file" > "${temp_dir}/home/home.txt"
     
     # Run container in dry run mode
     local output
@@ -77,15 +77,15 @@ test_docker_dry_run() {
         -e INPUT_DRY_RUN="true" \
         -e INPUT_CLEANUP_HOME="true" \
         -e INPUT_CLEANUP_WORKSPACE="true" \
-        -v "$temp_dir/workspace:/github/workspace" \
-        -v "$temp_dir/home:/github/home" \
+        -v "${temp_dir}/workspace:/github/workspace" \
+        -v "${temp_dir}/home:/github/home" \
         -w "/github/workspace" \
-        "$IMAGE_NAME" /cleanup.sh 2>&1) || true
+        "${IMAGE_NAME}" /cleanup.sh 2>&1) || true
     
     # Check files still exist and dry run message appears
-    if [[ -f "$temp_dir/workspace/test.txt" ]] && [[ -f "$temp_dir/home/home.txt" ]] && 
-       [[ "$output" == *"DRY RUN"* ]]; then
-        rm -rf "$temp_dir"
+    if [[ -f "${temp_dir}/workspace/test.txt" ]] && [[ -f "${temp_dir}/home/home.txt" ]] && 
+       [[ "${output}" == *"DRY RUN"* ]]; then
+        rm -rf "${temp_dir}"
         return 0
     fi
     
@@ -96,9 +96,9 @@ test_docker_dry_run() {
 test_docker_actual_cleanup() {
     # Create a temporary directory to mount
     local temp_dir="${TMPDIR}docker_test_$$"
-    mkdir -p "$temp_dir/workspace" "$temp_dir/home"
-    echo "test file" > "$temp_dir/workspace/test.txt"
-    echo "home file" > "$temp_dir/home/home.txt"
+    mkdir -p "${temp_dir}/workspace" "${temp_dir}/home"
+    echo "test file" > "${temp_dir}/workspace/test.txt"
+    echo "home file" > "${temp_dir}/home/home.txt"
     
     # Run container with actual cleanup
     docker run --rm \
@@ -107,14 +107,14 @@ test_docker_actual_cleanup() {
         -e INPUT_DRY_RUN="false" \
         -e INPUT_CLEANUP_HOME="true" \
         -e INPUT_CLEANUP_WORKSPACE="true" \
-        -v "$temp_dir/workspace:/github/workspace" \
-        -v "$temp_dir/home:/github/home" \
+        -v "${temp_dir}/workspace:/github/workspace" \
+        -v "${temp_dir}/home:/github/home" \
         -w "/github/workspace" \
-        "$IMAGE_NAME" /cleanup.sh >/dev/null 2>&1 || true
+        "${IMAGE_NAME}" /cleanup.sh >/dev/null 2>&1 || true
     
     # Check files are removed
-    if [[ ! -f "$temp_dir/workspace/test.txt" ]] && [[ ! -f "$temp_dir/home/home.txt" ]]; then
-        rm -rf "$temp_dir"
+    if [[ ! -f "${temp_dir}/workspace/test.txt" ]] && [[ ! -f "${temp_dir}/home/home.txt" ]]; then
+        rm -rf "${temp_dir}"
         return 0
     fi
     
@@ -125,22 +125,22 @@ test_docker_actual_cleanup() {
 test_image_size() {
     # Check that image is reasonably small (< 10MB)
     local size
-    size=$(docker images "$IMAGE_NAME" --format "{{.Size}}" | head -n1)
+    size=$(docker images "${IMAGE_NAME}" --format "{{.Size}}" | head -n1)
     
     # Convert size to MB for comparison (basic check)
-    if [[ "$size" == *"MB"* ]]; then
+    if [[ "${size}" == *"MB"* ]]; then
         local size_num=${size%MB}
-        if (( $(echo "$size_num < 10" | bc -l) )); then
+        if (( $(echo "${size_num} < 10" | bc -l) )); then
             return 0
         fi
     fi
     
     # If size is in KB or bytes, it's definitely small enough
-    if [[ "$size" == *"kB"* ]] || [[ "$size" == *"B"* ]]; then
+    if [[ "${size}" == *"kB"* ]] || [[ "${size}" == *"B"* ]]; then
         return 0
     fi
     
-    echo "Image size is $size (may be too large)"
+    echo "Image size is ${size} (may be too large)"
     return 1
 }
 
@@ -173,7 +173,7 @@ cleanup_docker
 echo "======================="
 echo -e "Tests completed: ${PASSED_TESTS}/${TOTAL_TESTS} passed"
 
-if [[ $TEST_FAILED -eq 0 ]]; then
+if [[ ${TEST_FAILED} -eq 0 ]]; then
     echo -e "${GREEN}All Docker tests passed!${NC}"
     exit 0
 else
