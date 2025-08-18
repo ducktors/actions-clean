@@ -23,6 +23,15 @@ cleanup_directory() {
     return 0
   fi
   
+  # Define files to preserve for action functionality
+  local preserve_patterns=(
+    "action.yml"
+    "action.yaml" 
+    "Dockerfile"
+    "entrypoint.sh"
+    "cleanup.sh"
+  )
+  
   local items
   items=$(find "${dir}" -mindepth 1 -maxdepth 1 2>/dev/null || true)
   
@@ -34,10 +43,42 @@ cleanup_directory() {
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "DRY RUN: Would clean ${description} directory: ${dir}"
     echo "Items that would be removed:"
-    find "${dir}" -mindepth 1 -maxdepth 1 -print 2>/dev/null || true
+    while IFS= read -r item; do
+      local basename_item=$(basename "${item}")
+      local should_preserve=false
+      
+      for pattern in "${preserve_patterns[@]}"; do
+        if [[ "${basename_item}" == "${pattern}" ]]; then
+          should_preserve=true
+          break
+        fi
+      done
+      
+      if [[ "${should_preserve}" == "false" ]]; then
+        echo "  ${item}"
+      fi
+    done <<< "${items}"
   else
     echo "Cleaning ${description} directory: ${dir}"
-    find "${dir}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+    local removed_count=0
+    while IFS= read -r item; do
+      local basename_item=$(basename "${item}")
+      local should_preserve=false
+      
+      for pattern in "${preserve_patterns[@]}"; do
+        if [[ "${basename_item}" == "${pattern}" ]]; then
+          should_preserve=true
+          break
+        fi
+      done
+      
+      if [[ "${should_preserve}" == "false" ]]; then
+        rm -rf "${item}" 2>/dev/null || true
+        ((removed_count++))
+      fi
+    done <<< "${items}"
+    
+    echo "Removed ${removed_count} items (preserved action files)"
   fi
 }
 
