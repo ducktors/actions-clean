@@ -1,5 +1,5 @@
 # action.yml
-name: "Self-Hosted Runner Post Job Cleanup Action"
+name: "Self-Hosted Runner Job Cleaner"
 description: "Cleanup the environment at the end of the job"
 branding:
   icon: "trash-2"
