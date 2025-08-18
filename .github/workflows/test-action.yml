@@ -1,0 +1,155 @@
+name: Test Action
+
+on:
+  push:
+    branches: [ master, main, improve-repo ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  test-action:
+    name: Test Actions Clean from Source
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create test files in workspace
+        run: |
+          echo "Creating test files to be cleaned..."
+          echo "test file 1" > test1.txt
+          echo "test file 2" > test2.txt
+          mkdir test-dir
+          echo "nested file" > test-dir/nested.txt
+          echo "Created files:"
+          find . -name "test*" -type f
+      
+      - name: Create test files in home
+        run: |
+          echo "Creating test files in home directory..."
+          echo "home file 1" > ~/home1.txt
+          echo "home file 2" > ~/home2.txt
+          echo "Created home files:"
+          ls -la ~ | grep home
+      
+      - name: Test action - Dry run mode
+        uses: ./
+        with:
+          dry_run: 'true'
+          cleanup_home: 'true'
+          cleanup_workspace: 'true'
+      
+      - name: Verify files still exist after dry run
+        run: |
+          echo "Verifying files still exist after dry run..."
+          if [[ ! -f test1.txt ]] || [[ ! -f test2.txt ]] || [[ ! -f test-dir/nested.txt ]]; then
+            echo "ERROR: Workspace files were deleted in dry run mode!"
+            exit 1
+          fi
+          if [[ ! -f ~/home1.txt ]] || [[ ! -f ~/home2.txt ]]; then
+            echo "ERROR: Home files were deleted in dry run mode!"
+            exit 1
+          fi
+          echo "✓ All files preserved in dry run mode"
+      
+      - name: Test action - Cleanup workspace only
+        uses: ./
+        with:
+          dry_run: 'false'
+          cleanup_home: 'false'
+          cleanup_workspace: 'true'
+      
+      - name: Verify workspace cleaned, home preserved
+        run: |
+          echo "Verifying selective cleanup worked..."
+          if [[ -f test1.txt ]] || [[ -f test2.txt ]] || [[ -d test-dir ]]; then
+            echo "ERROR: Workspace files were not cleaned!"
+            exit 1
+          fi
+          if [[ ! -f ~/home1.txt ]] || [[ ! -f ~/home2.txt ]]; then
+            echo "ERROR: Home files were incorrectly deleted!"
+            exit 1
+          fi
+          echo "✓ Workspace cleaned, home preserved"
+      
+      - name: Recreate workspace files for final test
+        run: |
+          echo "Recreating workspace files..."
+          echo "final test file" > final.txt
+          mkdir final-dir
+          echo "final nested file" > final-dir/final.txt
+      
+      - name: Test action - Full cleanup
+        uses: ./
+        with:
+          dry_run: 'false'
+          cleanup_home: 'true'
+          cleanup_workspace: 'true'
+      
+      - name: Verify full cleanup
+        run: |
+          echo "Verifying full cleanup..."
+          if [[ -f final.txt ]] || [[ -d final-dir ]]; then
+            echo "ERROR: Workspace files were not cleaned in full cleanup!"
+            exit 1
+          fi
+          if [[ -f ~/home1.txt ]] || [[ -f ~/home2.txt ]]; then
+            echo "ERROR: Home files were not cleaned in full cleanup!"
+            exit 1
+          fi
+          echo "✓ Full cleanup completed successfully"
+
+  test-action-minimal:
+    name: Test Minimal Usage
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create some files
+        run: |
+          echo "temp file" > temp.txt
+          echo "another file" > another.txt
+      
+      - name: Test action with defaults
+        uses: ./
+      
+      - name: Verify default behavior
+        run: |
+          echo "Checking default behavior (should clean both workspace and home)..."
+          if [[ -f temp.txt ]] || [[ -f another.txt ]]; then
+            echo "ERROR: Default action did not clean workspace!"
+            exit 1
+          fi
+          echo "✓ Default action worked correctly"
+
+  test-action-security:
+    name: Test Security Features
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create test files
+        run: |
+          echo "test file" > security-test.txt
+      
+      - name: Test from different directory (should be safe)
+        run: |
+          cd /tmp
+          echo "Testing security check..."
+          # This should skip cleanup due to security check
+          $GITHUB_WORKSPACE/cleanup.sh || echo "Cleanup skipped (expected for security)"
+      
+      - name: Verify security worked
+        run: |
+          if [[ -f security-test.txt ]]; then
+            echo "✓ Security check prevented cleanup from outside workspace"
+          else
+            echo "ERROR: Security check failed - file was deleted!"
+            exit 1
+          fi
