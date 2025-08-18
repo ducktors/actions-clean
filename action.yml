@@ -5,9 +5,18 @@ branding:
   icon: "trash-2"
   color: "black"
 inputs:
-  service_ids:
+  cleanup_home:
+    description: "Whether to cleanup HOME directory contents"
     required: false
-    default: ${{ toJSON(job.services.*.id) }}
+    default: "true"
+  cleanup_workspace:
+    description: "Whether to cleanup GITHUB_WORKSPACE contents"
+    required: false
+    default: "true"
+  dry_run:
+    description: "Show what would be cleaned without actually deleting files"
+    required: false
+    default: "false"
 runs:
   using: "docker"
   image: "Dockerfile"
