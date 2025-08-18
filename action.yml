@@ -1,15 +1,14 @@
 # action.yml
-name: 'Self Hosted Runner Post Job Cleanup Action'
-description: 'Cleansup the environment at the end of the job'
+name: "Self-Hosted Runner Post Job Cleanup Action"
+description: "Cleanup the environment at the end of the job"
 branding:
-  icon: 'trash-2'
-  color: 'white'
+  icon: "trash-2"
+  color: "black"
 inputs:
   service_ids:
     required: false
     default: ${{ toJSON(job.services.*.id) }}
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  post-entrypoint: '/cleanup.sh'
-
+  using: "docker"
+  image: "Dockerfile"
+  post-entrypoint: "/cleanup.sh"
